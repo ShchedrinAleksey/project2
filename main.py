@@ -109,6 +109,83 @@ class Apple(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
+
+class Snake(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(snake_group, all_sprites)
+        # важные переменные - позиция головы змеи и его тела
+        self.snake_head_pos = [10, 5]
+        # начальное тело змеи состоит из трех сегментов
+        # голова змеи - первый элемент, хвост - последний
+        self.snake_body = [[10, 5], [9, 5], [8, 5]]
+        # изображения головы и тела
+        self.head_image = snake_images['head']
+        self.rotated_head_image = self.head_image
+        self.body_image = snake_images['body']
+        # направление движение змеи, изначально
+        # зададимся вправо
+        self.direction = "RIGHT"
+        # куда будет меняться напрвление движения змеи
+        # при нажатии соответствующих клавиш
+        self.change_to = self.direction
+
+    def validate_direction_and_change(self):
+        """Изменияем направление движения змеи только в том случае,
+        если оно не прямо противоположно текущему"""
+        if any((self.change_to == "RIGHT" and not self.direction == "LEFT",
+                self.change_to == "LEFT" and not self.direction == "RIGHT",
+                self.change_to == "UP" and not self.direction == "DOWN",
+                self.change_to == "DOWN" and not self.direction == "UP")):
+            self.direction = self.change_to
+
+    def change_head_position(self):
+        """Изменияем положение головы змеи"""
+        if self.direction == "RIGHT":
+            self.snake_head_pos[0] += 1
+            self.rotated_head_image = self.head_image
+        elif self.direction == "LEFT":
+            self.snake_head_pos[0] -= 1
+            self.rotated_head_image = self.head_image.transpose(Image.ROTATE_180)
+        elif self.direction == "UP":
+            self.snake_head_pos[1] -= 1
+            self.rotated_head_image = self.head_image.transpose(Image.ROTATE_90)
+        elif self.direction == "DOWN":
+            self.snake_head_pos[1] += 1
+            self.rotated_head_image = self.head_image.transpose(Image.ROTATE_270)
+
+    def snake_body_mechanism(self, score, food_pos):
+        # если вставлять просто snake_head_pos,
+        # то на всех трех позициях в snake_body
+        # окажется один и тот же список с одинаковыми координатами
+        # и мы будем управлять змеей из одного квадрата
+        self.snake_body.insert(0, list(self.snake_head_pos))
+        # если съели еду
+        if (self.snake_head_pos[0] == food_pos[0] and
+                self.snake_head_pos[1] == food_pos[1]):
+            # если съели еду то задаем новое положение еды случайным
+            # образом и увеличивем score на один
+            food_pos = [random.randrange(1, 20), random.randrange(1, 20)]
+            score += 1
+        else:
+            # если не нашли еду, то убираем последний сегмент,
+            # если этого не сделать, то змея будет постоянно расти
+            self.snake_body.pop()
+        return score, food_pos
+
+    def draw_snake(self):
+        """Отображаем все сегменты змеи"""
+        # Сперва отобразим голову
+        self.rect = self.rotated_head_image.get_rect().move(
+            tile_width * self.snake_body[0][0],
+            tile_height * self.snake_body[0][1])
+        # затем остальное тело
+        for pos in self.snake_body[1:]:
+            self.rect = self.body_image.get_rect().move(
+                tile_width * pos[0],
+                tile_height * pos[1])
+
+
+
 # class Player(pygame.sprite.Sprite):
 #     def __init__(self, pos_x, pos_y):
 #         super().__init__(player_group, all_sprites)
@@ -165,7 +242,7 @@ if __name__ == '__main__':
     all_sprites = pygame.sprite.Group()
     tiles_group = pygame.sprite.Group()
     walls_group = pygame.sprite.Group()
-    player_group = pygame.sprite.Group()
+    snake_group = pygame.sprite.Group()
     apple_group = pygame.sprite.Group()
 
     level_name = 'level.txt'
@@ -197,5 +274,5 @@ if __name__ == '__main__':
         # for sprite in all_sprites:
         #     camera.apply(sprite)
         all_sprites.draw(screen)
-        player_group.draw(screen)
+        snake_group.draw(screen)
         pygame.display.flip()
