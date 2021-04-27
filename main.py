@@ -74,26 +74,33 @@ def generate_level(level):
     snake, apple, x, y = None, None, None, None
     for y in range(2):
         for x in range(2):
-            Tile('grass', x, y)
+            Tile('tile','grass', x, y)
     for y in range(len(level)):
         for x in range(len(level[y])):
             # if level[y][x] == '.':
             #     Tile('empty', x, y)
             if level[y][x] == '#':
-                walls_group.add(Tile('wall', x, y))
+                walls_group.add(Tile('tile', 'wall', x, y))
             # elif level[y][x] == '@':
             #     Tile('empty', x, y)
             #     new_player = Player(x, y)
     a_x = random.randint(1, 20)
     a_y = random.randint(1, 20)
     apple = Apple(a_x, a_y)
+    snake = Snake()
     return snake, apple, x, y
 
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, tile_type, pos_x, pos_y):
-        super().__init__(tiles_group, all_sprites)
-        self.image = tile_images[tile_type]
+    def __init__(self, group, tile_type, pos_x, pos_y):
+        if group == 'snake':
+            tile_group = snake_group
+            images = snake_images
+        else:
+            tile_group = tiles_group
+            images = tile_images
+        super().__init__(tile_group, all_sprites)
+        self.image = images[tile_type]
         if tile_type == 'grass':
             self.rect = self.image.get_rect().move(
                 200 * pos_x, 200 * pos_y)
@@ -110,9 +117,8 @@ class Apple(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
 
 
-class Snake(pygame.sprite.Sprite):
+class Snake:
     def __init__(self):
-        super().__init__(snake_group, all_sprites)
         # важные переменные - позиция головы змеи и его тела
         self.snake_head_pos = [10, 5]
         # начальное тело змеи состоит из трех сегментов
@@ -175,15 +181,12 @@ class Snake(pygame.sprite.Sprite):
     def draw_snake(self):
         """Отображаем все сегменты змеи"""
         # Сперва отобразим голову
-        self.rect = self.rotated_head_image.get_rect().move(
-            tile_width * self.snake_body[0][0],
-            tile_height * self.snake_body[0][1])
+        x, y = self.snake_body[0][0], self.snake_body[0][1]
+        snake_group.add(Tile('snake', 'head', x, y))
         # затем остальное тело
         for pos in self.snake_body[1:]:
-            self.rect = self.body_image.get_rect().move(
-                tile_width * pos[0],
-                tile_height * pos[1])
-
+            snake_group.add(Tile('snake', 'body',
+                                 pos[0], pos[1]))
 
 
 # class Player(pygame.sprite.Sprite):
@@ -250,7 +253,7 @@ if __name__ == '__main__':
         print(f"Файл с изображением '{level_name}' не найден")
         terminate()
     snake, apple, level_x, level_y = generate_level(load_level(level_name))
-
+    snake.draw_snake()
     # camera = Camera()
 
     while True:
