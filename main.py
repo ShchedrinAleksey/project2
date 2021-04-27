@@ -113,6 +113,7 @@ class Apple(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(apple_group, all_sprites)
         self.image = apple_image
+        self.pos = pos_x, pos_y
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
@@ -134,6 +135,7 @@ class Snake:
         # куда будет меняться напрвление движения змеи
         # при нажатии соответствующих клавиш
         self.change_to = self.direction
+        self.speed = 0
 
     def validate_direction_and_change(self):
         """Изменияем направление движения змеи только в том случае,
@@ -146,17 +148,21 @@ class Snake:
 
     def change_head_position(self):
         """Изменияем положение головы змеи"""
+        self.speed += 1
+        if self.speed > 161:
+            self. speed = 0
+        speed = self.speed // 160
         if self.direction == "RIGHT":
-            self.snake_head_pos[0] += 1
+            self.snake_head_pos[0] += speed
             self.rotated_head_image = self.head_image
         elif self.direction == "LEFT":
-            self.snake_head_pos[0] -= 1
+            self.snake_head_pos[0] -= speed
             self.rotated_head_image = self.head_image.transpose(Image.ROTATE_180)
         elif self.direction == "UP":
-            self.snake_head_pos[1] -= 1
+            self.snake_head_pos[1] -= speed
             self.rotated_head_image = self.head_image.transpose(Image.ROTATE_90)
         elif self.direction == "DOWN":
-            self.snake_head_pos[1] += 1
+            self.snake_head_pos[1] += speed
             self.rotated_head_image = self.head_image.transpose(Image.ROTATE_270)
 
     def snake_body_mechanism(self, score, food_pos):
@@ -225,6 +231,7 @@ if __name__ == '__main__':
     pygame.display.set_caption('Игра Змейка')
 
     clock = pygame.time.Clock()
+    score = 0
 
     start_screen()
     # terminate()
@@ -253,7 +260,6 @@ if __name__ == '__main__':
         print(f"Файл с изображением '{level_name}' не найден")
         terminate()
     snake, apple, level_x, level_y = generate_level(load_level(level_name))
-    snake.draw_snake()
     # camera = Camera()
 
     while True:
@@ -273,9 +279,13 @@ if __name__ == '__main__':
                 pass
                 # player.update(0, -1)
         screen.fill('black')
+        snake.change_head_position()
+        food_pos = apple.pos
+        score, food_pos = snake.snake_body_mechanism(score, food_pos)
+        snake.draw_snake()
         # camera.update(player)
         # for sprite in all_sprites:
         #     camera.apply(sprite)
         all_sprites.draw(screen)
-        snake_group.draw(screen)
+        # snake_group.draw(screen)
         pygame.display.flip()
