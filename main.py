@@ -35,6 +35,14 @@ def terminate():
     sys.exit()
 
 
+def button_click(rect, pos):
+    x, y = pos
+    if x >= rect.x and x <= rect.x + rect.width and \
+            y >= rect.y and y <= rect.y + rect.height:
+        return True
+    return False
+
+
 def start_screen():
     intro_text = ["[Начать]",
                   "",
@@ -49,23 +57,26 @@ def start_screen():
         line_count += 1
         string_rendered = font.render(line, True, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
-        if line_count == 1:
-            start_rect = intro_rect
-        elif line_count == 3:
-            end_rect = intro_rect
         text_coord += 10
         intro_rect.top = text_coord
         intro_rect.x = 200
         text_coord += intro_rect.height
+        if line_count == 1:
+            start_rect = intro_rect
+        elif line_count == 3:
+            end_rect = intro_rect
         screen.blit(string_rendered, intro_rect)
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN and\
+                    button_click(start_rect, event.pos):
                 return  # начинаем игру
+            elif event.type == pygame.MOUSEBUTTONDOWN and \
+                    button_click(end_rect, event.pos):
+                terminate()  # завершаем игру
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -90,12 +101,14 @@ def generate_level(level):
     snake = Snake()
     return snake, apple, x, y
 
+
 def show_info(score, level):
     font = pygame.font.Font(None, 30)
     text = font.render(f"Score: {str(score)}", 1, (100, 255, 100))
     screen.blit(text, (405, 50))
     text2 = font.render(f"Level: {str(level)}", 1, (100, 255, 100))
     screen.blit(text2, (405, 100))
+
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, group, tile_type, pos_x, pos_y):
@@ -167,7 +180,6 @@ class Snake:
                     self.change_to == "RIGHT" and self.direction == "UP":
                 self.snake_body[0][2].image = pygame.transform.rotate(
                     self.snake_body[0][2].image, 270)
-
             self.direction = self.change_to
 
     def change_head_position(self):
@@ -180,16 +192,12 @@ class Snake:
         self.speed2 = self.speed // sp
         if self.direction == "RIGHT":
             self.snake_head_pos[0] += self.speed2
-            # self.rotated_head_image = self.head_image
         elif self.direction == "LEFT":
             self.snake_head_pos[0] -= self.speed2
-            # self.rotated_head_image = self.head_image.transpose(Image.ROTATE_180)
         elif self.direction == "UP":
             self.snake_head_pos[1] -= self.speed2
-            # self.rotated_head_image = self.head_image.transpose(Image.ROTATE_90)
         elif self.direction == "DOWN":
             self.snake_head_pos[1] += self.speed2
-            # self.rotated_head_image = self.head_image.transpose(Image.ROTATE_270)
 
     def snake_body_mechanism(self, score, level, food_pos):
         # если вставлять просто snake_head_pos,
@@ -242,35 +250,6 @@ class Snake:
                 self.snake_body[i][2].image.get_rect().move(
                     tile_width * x, tile_height * y)
 
-# class Player(pygame.sprite.Sprite):
-#     def __init__(self, pos_x, pos_y):
-#         super().__init__(player_group, all_sprites)
-#         self.image = player_image
-#         self.rect = self.image.get_rect().move(
-#             tile_width * pos_x + 15, tile_height * pos_y + 5)
-#
-#     def update(self, direction_x, direction_y):
-#         self.rect.x += tile_width * direction_x
-#         self.rect.y += tile_height * direction_y
-#         if pygame.sprite.spritecollideany(self, walls_group):
-#             self.rect.x -= tile_width * direction_x
-#             self.rect.y -= tile_height * direction_y
-
-
-# class Camera:
-#     def __init__(self):
-#         self.dx = 0
-#         self.dy = 0
-#
-#     def apply(self, obj):
-#         obj.rect.x += self.dx
-#         obj.rect.y += self.dy
-#
-#     def update(self, target):
-#         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-#         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
-
-
 if __name__ == '__main__':
     pygame.init()
     size = WIDTH, HEIGHT = 500, 400
@@ -282,7 +261,6 @@ if __name__ == '__main__':
     level = 1
 
     start_screen()
-    # terminate()
 
     tile_images = {
         'wall': load_image('wall.png'),
@@ -293,7 +271,6 @@ if __name__ == '__main__':
         'body': load_image('body.png')
     }
     apple_image = load_image('apple.png')
-    # fon_image = load_image('grass.png')
 
     tile_width = tile_height = 20
 
@@ -308,12 +285,13 @@ if __name__ == '__main__':
         print(f"Файл с изображением '{level_name}' не найден")
         terminate()
     snake, apple, level_x, level_y = generate_level(load_level(level_name))
-    # camera = Camera()
     snake.draw_snake()
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
                 snake.change_to = "RIGHT"
@@ -331,9 +309,5 @@ if __name__ == '__main__':
         snake.update_draw()
         apple.update(food_pos)
         show_info(score, level)
-        # camera.update(player)
-        # for sprite in all_sprites:
-        #     camera.apply(sprite)
         all_sprites.draw(screen)
-        # snake_group.draw(screen)
         pygame.display.flip()
