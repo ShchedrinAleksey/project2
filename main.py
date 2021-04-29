@@ -84,12 +84,18 @@ def generate_level(level):
             # elif level[y][x] == '@':
             #     Tile('empty', x, y)
             #     new_player = Player(x, y)
-    a_x = random.randint(1, 20)
-    a_y = random.randint(1, 20)
+    a_x = random.randint(1, 18)
+    a_y = random.randint(1, 18)
     apple = Apple(a_x, a_y)
     snake = Snake()
     return snake, apple, x, y
 
+def show_info(score, level):
+    font = pygame.font.Font(None, 30)
+    text = font.render(f"Score: {str(score)}", 1, (100, 255, 100))
+    screen.blit(text, (405, 50))
+    text2 = font.render(f"Level: {str(level)}", 1, (100, 255, 100))
+    screen.blit(text2, (405, 100))
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, group, tile_type, pos_x, pos_y):
@@ -116,6 +122,11 @@ class Apple(pygame.sprite.Sprite):
         self.pos = pos_x, pos_y
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
+
+    def update(self, pos):
+        self.pos = pos
+        self.rect = self.image.get_rect().move(
+            tile_width * pos[0], tile_height * pos[1])
 
 
 class Snake:
@@ -144,14 +155,29 @@ class Snake:
                 self.change_to == "LEFT" and not self.direction == "RIGHT",
                 self.change_to == "UP" and not self.direction == "DOWN",
                 self.change_to == "DOWN" and not self.direction == "UP")):
+            if self.change_to == "UP" and self.direction == "RIGHT" or\
+                    self.change_to == "LEFT" and self.direction == "UP" or\
+                    self.change_to == "DOWN" and self.direction == "LEFT" or\
+                    self.change_to == "RIGHT" and self.direction == "DOWN":
+                self.snake_body[0][2].image = pygame.transform.rotate(
+                    self.snake_body[0][2].image, 90)
+            if self.change_to == "DOWN" and self.direction == "RIGHT" or \
+                    self.change_to == "LEFT" and self.direction == "DOWN" or \
+                    self.change_to == "UP" and self.direction == "LEFT" or \
+                    self.change_to == "RIGHT" and self.direction == "UP":
+                self.snake_body[0][2].image = pygame.transform.rotate(
+                    self.snake_body[0][2].image, 270)
+
             self.direction = self.change_to
 
     def change_head_position(self):
         """Изменяем положение головы змеи"""
+        # Делаем задержку перемещения
+        sp = 200 // level
         self.speed += 1
-        if self.speed > 1000:
+        if self.speed > sp:
             self.speed = 0
-        self.speed2 = self.speed // 1000
+        self.speed2 = self.speed // sp
         if self.direction == "RIGHT":
             self.snake_head_pos[0] += self.speed2
             # self.rotated_head_image = self.head_image
@@ -165,7 +191,7 @@ class Snake:
             self.snake_head_pos[1] += self.speed2
             # self.rotated_head_image = self.head_image.transpose(Image.ROTATE_270)
 
-    def snake_body_mechanism(self, score, food_pos):
+    def snake_body_mechanism(self, score, level, food_pos):
         # если вставлять просто snake_head_pos,
         # то на всех трех позициях в snake_body
         # окажется один и тот же список с одинаковыми координатами
@@ -179,8 +205,10 @@ class Snake:
                     self.snake_head_pos[1] == food_pos[1]):
                 # если съели еду то задаем новое положение еды случайным
                 # образом и увеличивем score на один
-                food_pos = [random.randrange(1, 20), random.randrange(1, 20)]
+                food_pos = [random.randrange(1, 18), random.randrange(1, 18)]
                 score += 1
+                if score % 10 == 0:
+                    level += 1
                 # добавим изображение элемента хвоста в конец.
                 i = len(self.snake_body) - 1
                 x, y = self.snake_body[i][0], self.snake_body[i][1]
@@ -191,7 +219,7 @@ class Snake:
                 # если не нашли еду, то убираем последний сегмент,
                 # если этого не сделать, то змея будет постоянно расти
                 self.snake_body.pop()
-        return score, food_pos
+        return score, level, food_pos
 
     def draw_snake(self):
         """Отображаем все сегменты змеи"""
@@ -251,6 +279,7 @@ if __name__ == '__main__':
 
     clock = pygame.time.Clock()
     score = 0
+    level = 1
 
     start_screen()
     # terminate()
@@ -287,22 +316,21 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
-                snake.direction = "RIGHT"
-                # player.update(1, 0)
+                snake.change_to = "RIGHT"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
-                snake.direction = "LEFT"
-                # player.update(-1, 0)
+                snake.change_to = "LEFT"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                snake.direction = "DOWN"
-                # player.update(0, 1)
+                snake.change_to = "DOWN"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                snake.direction = "UP"
-                # player.update(0, -1)
+                snake.change_to = "UP"
+            snake.validate_direction_and_change()
         screen.fill('black')
         snake.change_head_position()
         food_pos = apple.pos
-        score, food_pos = snake.snake_body_mechanism(score, food_pos)
+        score, level, food_pos = snake.snake_body_mechanism(score, level, food_pos)
         snake.update_draw()
+        apple.update(food_pos)
+        show_info(score, level)
         # camera.update(player)
         # for sprite in all_sprites:
         #     camera.apply(sprite)
