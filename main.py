@@ -35,6 +35,9 @@ def terminate():
     sys.exit()
 
 
+def game_over():
+    terminate()
+
 def button_click(rect, pos):
     x, y = pos
     if x >= rect.x and x <= rect.x + rect.width and \
@@ -85,7 +88,7 @@ def generate_level(level):
     snake, apple, x, y = None, None, None, None
     for y in range(2):
         for x in range(2):
-            Tile('tile','grass', x, y)
+            Tile('tile', 'grass', x, y)
     for y in range(len(level)):
         for x in range(len(level[y])):
             # if level[y][x] == '.':
@@ -118,6 +121,8 @@ class Tile(pygame.sprite.Sprite):
         else:
             tile_group = tiles_group
             images = tile_images
+        if tile_type == 'head':
+            tile_group = tiles_group
         super().__init__(tile_group, all_sprites)
         self.image = images[tile_type]
         if tile_type == 'grass':
@@ -235,7 +240,7 @@ class Snake:
         x, y = self.snake_body[0][0], self.snake_body[0][1]
         head = Tile('snake', 'head', x, y)
         self.snake_body[0][2] = head
-        snake_group.add(head)
+        snake_head.add(head)
         # затем остальное тело
         for i in range(1, len(self.snake_body)):
             x, y = self.snake_body[i][0], self.snake_body[i][1]
@@ -249,6 +254,10 @@ class Snake:
             self.snake_body[i][2].rect = \
                 self.snake_body[i][2].image.get_rect().move(
                     tile_width * x, tile_height * y)
+        if pygame.sprite.spritecollideany(self.snake_body[0][2], walls_group):
+            game_over()
+        if pygame.sprite.spritecollideany(self.snake_body[0][2], snake_group):
+            game_over()
 
 if __name__ == '__main__':
     pygame.init()
@@ -278,6 +287,7 @@ if __name__ == '__main__':
     tiles_group = pygame.sprite.Group()
     walls_group = pygame.sprite.Group()
     snake_group = pygame.sprite.Group()
+    snake_head = pygame.sprite.Group()
     apple_group = pygame.sprite.Group()
 
     level_name = 'level.txt'
