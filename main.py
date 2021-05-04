@@ -36,49 +36,59 @@ def terminate():
 
 
 def game_over():
-    terminate()
-
-def button_click(rect, pos):
-    x, y = pos
-    if x >= rect.x and x <= rect.x + rect.width and \
-            y >= rect.y and y <= rect.y + rect.height:
-        return True
-    return False
-
-
-def start_screen():
-    intro_text = ["[Начать]",
-                  "",
-                  "[Выход]"]
-
-    fon = pygame.transform.scale(load_image('snake-game.png'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 120
-    line_count = 0
-    for line in intro_text:
-        line_count += 1
-        string_rendered = font.render(line, True, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 200
-        text_coord += intro_rect.height
-        if line_count == 1:
-            start_rect = intro_rect
-        elif line_count == 3:
-            end_rect = intro_rect
-        screen.blit(string_rendered, intro_rect)
-
+    b_ok = Button("OK", -1, 350)
     while True:
+        screen.fill('black')
+        font = pygame.font.Font(None, 50)
+        text = font.render("GAME OVER", True, (255, 255, 255))
+        x = (WIDTH - text.get_rect().width) // 2
+        screen.blit(text, (x, 50))
+        text2 = font.render(f"Вы набрали: {str(score)}", True, (100, 255, 100))
+        x = (WIDTH - text2.get_rect().width) // 2
+        screen.blit(text2, (x, 100))
+        # нарисуем кнопку ок
+        b_ok.draw()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.MOUSEBUTTONDOWN and\
-                    button_click(start_rect, event.pos):
+            elif event.type == pygame.MOUSEMOTION and b_ok.is_mouse_over(event.pos):
+                b_ok.up()  # приподнимем кнопку
+            elif event.type == pygame.MOUSEMOTION and not b_ok.is_mouse_over(event.pos):
+                b_ok.normal()  # возвращаем в нормальный вид
+            elif event.type == pygame.MOUSEBUTTONDOWN and b_ok.is_mouse_over( event.pos):
+                b_ok.down()  # опускаем кнопку
+            elif event.type == pygame.MOUSEBUTTONUP and b_ok.is_mouse_over(event.pos):
+                terminate()  # завершаем игру
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def start_screen():
+    fon = pygame.transform.scale(load_image('snake-game.png'), (WIDTH, HEIGHT))
+    b_start = Button("Начать", -1, 250)
+    b_end = Button("Выход", -1, 300)
+    while True:
+        screen.blit(fon, (0, 0))
+        b_start.draw()
+        b_end.draw()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEMOTION and b_start.is_mouse_over(event.pos):
+                b_start.up()  # приподнимем кнопку
+            elif event.type == pygame.MOUSEMOTION and not b_start.is_mouse_over(event.pos):
+                b_start.normal()  # возвращаем в нормальный вид
+            elif event.type == pygame.MOUSEBUTTONDOWN and b_start.is_mouse_over(event.pos):
+                b_start.down()  # опускаем кнопку
+            elif event.type == pygame.MOUSEBUTTONUP and b_start.is_mouse_over(event.pos):
                 return  # начинаем игру
-            elif event.type == pygame.MOUSEBUTTONDOWN and \
-                    button_click(end_rect, event.pos):
+            if event.type == pygame.MOUSEMOTION and b_end.is_mouse_over(event.pos):
+                b_end.up()  # приподнимем кнопку
+            elif event.type == pygame.MOUSEMOTION and not b_end.is_mouse_over(event.pos):
+                b_end.normal()  # возвращаем в нормальный вид
+            elif event.type == pygame.MOUSEBUTTONDOWN and b_end.is_mouse_over(event.pos):
+                b_end.down()  # опускаем кнопку
+            elif event.type == pygame.MOUSEBUTTONUP and b_end.is_mouse_over(event.pos):
                 terminate()  # завершаем игру
         pygame.display.flip()
         clock.tick(FPS)
@@ -111,6 +121,49 @@ def show_info(score, level):
     screen.blit(text, (405, 50))
     text2 = font.render(f"Level: {str(level)}", 1, (100, 255, 100))
     screen.blit(text2, (405, 100))
+
+
+class Button:
+    def __init__(self, text, x, y, w=100):
+        self.w = w
+        self.h = 30
+        if x == -1:
+            self.x = (WIDTH - w) // 2
+        else:
+            self.x = x
+        self.y = y
+        self.text = text
+        self.dx = 0
+        self.dy = 0
+        self.draw()
+
+    def draw(self):
+        font = pygame.font.Font(None, 20)
+        text = font.render(self.text, 2, (255, 250, 100))
+        pos = self.x + self.dx, self.y + self.dy
+        x_t = pos[0] + (self.w - text.get_rect().width) // 2
+        y_t = pos[1] + (self.h - text.get_rect().height) // 2
+        pygame.draw.rect(screen, (50, 50, 50), (pos, (self.w, self.h)))
+        pygame.draw.rect(screen, (250, 255, 100), (pos, (self.w, self.h)), 5)
+        screen.blit(text, (x_t, y_t))
+
+    def is_mouse_over(self, pos):
+        x, y = pos
+        if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
+            return True
+        return False
+
+    def up(self):
+        self.dx = -2
+        self.dy = -2
+
+    def normal(self):
+        self.dx = 0
+        self.dy = 0
+
+    def down(self):
+        self.dx = 2
+        self.dy = 2
 
 
 class Tile(pygame.sprite.Sprite):
