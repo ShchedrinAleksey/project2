@@ -117,9 +117,9 @@ def generate_level(level):
 
 def show_info(score, level):
     font = pygame.font.Font(None, 30)
-    text = font.render(f"Score: {str(score)}", 1, (100, 255, 100))
+    text = font.render(f"Score: {str(score)}", True, (100, 255, 100))
     screen.blit(text, (405, 50))
-    text2 = font.render(f"Level: {str(level)}", 1, (100, 255, 100))
+    text2 = font.render(f"Level: {str(level)}", True, (100, 255, 100))
     screen.blit(text2, (405, 100))
 
 
@@ -139,7 +139,7 @@ class Button:
 
     def draw(self):
         font = pygame.font.Font(None, 20)
-        text = font.render(self.text, 2, (255, 250, 100))
+        text = font.render(self.text, True, (255, 250, 100))
         pos = self.x + self.dx, self.y + self.dy
         x_t = pos[0] + (self.w - text.get_rect().width) // 2
         y_t = pos[1] + (self.h - text.get_rect().height) // 2
